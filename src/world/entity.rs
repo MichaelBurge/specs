@@ -222,6 +222,25 @@ impl<'a> Iterator for CreateIterAtomic<'a> {
 #[derive(Clone, Copy, Debug, Hash, Eq, Ord, PartialEq, PartialOrd)]
 pub struct Entity(Index, Generation);
 
+/// Allow serializing these.
+impl From<i64> for Entity {
+    fn from(x:i64) -> Entity {
+        let a:u32 = (x >> 32) as u32;
+        let b = (x & 0xFFFFFFFF) as i32;
+        return Entity(
+            a,
+            Generation(std::num::NonZeroI32::new(b).expect(&*format!("Entity::from() failed to convert {:?}", b)))
+        );
+    }
+}
+
+impl From<Entity> for i64 {
+    fn from(x:Entity) -> i64 {
+        ((x.0 as i64) << 32) |
+        ((x.1).0.get() as i64)
+    }
+}
+
 impl Entity {
     /// Creates a new entity (externally from ECS).
     #[cfg(test)]
