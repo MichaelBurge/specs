@@ -1,4 +1,5 @@
 use std::{
+    convert::TryFrom,
     fmt,
     num::NonZeroI32,
     sync::atomic::{AtomicUsize, Ordering},
@@ -223,14 +224,15 @@ impl<'a> Iterator for CreateIterAtomic<'a> {
 pub struct Entity(Index, Generation);
 
 /// Allow serializing these.
-impl From<i64> for Entity {
-    fn from(x:i64) -> Entity {
+impl TryFrom<i64> for Entity {
+    type Error = String;
+    fn try_from(x:i64) -> std::result::Result<Entity, Self::Error> {
         let a:u32 = (x >> 32) as u32;
         let b = (x & 0xFFFFFFFF) as i32;
-        return Entity(
-            a,
-            Generation(std::num::NonZeroI32::new(b).expect(&*format!("Entity::from() failed to convert {:?}", b)))
-        );
+	match std::num::NonZeroI32::new(b) {
+          None => Err(format!("Entity's Generation must be nonzero")),
+	  Some(b) => Ok(Entity(a, Generation(b))),
+	}
     }
 }
 
